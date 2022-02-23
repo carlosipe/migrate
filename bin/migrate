@@ -1,0 +1,38 @@
+#!/bin/bash
+set -Eeuo pipefail
+
+# Check Variables are set
+[ -n "${MIGRATIONS_DIR} ${DATABASE_URL}" ]
+
+PSQL="psql -qtAv ON_ERROR_STOP=ON $DATABASE_URL "
+
+# On first run, create schema_migrations table
+$PSQL <<EOF
+  SET client_min_messages TO WARNING;
+  create table if not exists schema_migrations(version text);
+EOF
+
+# Calculate pending migrations by comparing migration_files against 
+# schema_migrations
+pending_migrations() {
+$PSQL <<EOF
+  begin;
+  create temporary table if not exists t_files(version text) on commit drop;
+  copy t_files(version) from stdin csv;
+$(ls -1 $MIGRATIONS_DIR)
+\.
+  select t_files.version
+  from t_files
+  left join schema_migrations using(version)
+  where schema_migrations.version is null
+  order by version asc;
+  commit;
+EOF
+}
+
+# For each pending migration, run it and mark as done
+pending_migrations | sed '/^$/d' | while IFS= read -r f;do
+  echo "Migrating $f"
+  $PSQL -f "${MIGRATIONS_DIR}/${f}"
+  $PSQL -c "insert into schema_migrations(version) values('$f')"
+done
