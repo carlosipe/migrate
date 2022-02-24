@@ -1,0 +1,8 @@
+#!/bin/bash
+set -Eeuo pipefail
+
+FILENAME=$(echo "$(date +%s) ${@}.sql" | tr '[:upper:]' '[:lower:]' | tr ' ' '_')
+DST_PATH=${MIGRATIONS_DIR%/}/${FILENAME}
+
+touch "$DST_PATH"
+echo "$DST_PATH"

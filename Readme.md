@@ -24,3 +24,12 @@ $ migrate
 Migrating 1234_create_users.sql
 Migrating 1789_create_orders.sql
 ```
+
+### Generating migration files
+
+```sh
+$ export MIGRATIONS_DIR=/home/whoever/project_one/migrations
+$ migration create orders
+
+/home/whoever/project_one/migrations/1645698230_create_orders.sql
+```
